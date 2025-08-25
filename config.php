@@ -1,7 +1,7 @@
 <?php
 $host = "fc_memoria";   // nombre del servicio en Easypanel
 $port = "5432";
-$dbname = "postgres";
+$dbname = "impresiones_fullcolor";
 $user = "memoria";
 $password = "tu_password";
 
