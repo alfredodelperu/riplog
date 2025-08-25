@@ -732,7 +732,28 @@
                 spinner.style.display = 'inline-block';
                 refreshBtn.classList.add('loading');
                 
-                const response = await fetch('api.php');
+                // Construir parámetros de filtro
+                const params = new URLSearchParams();
+                params.append('dateFrom', document.getElementById('dateFrom').value);
+                params.append('dateTo', document.getElementById('dateTo').value);
+                
+                const filenameFilter = document.getElementById('filenameFilter').value.trim();
+                if (filenameFilter) {
+                    params.append('filename', filenameFilter);
+                    params.append('filenameLogic', document.querySelector('input[name="filenameLogic"]:checked').value);
+                }
+                
+                const selectedPcs = Array.from(document.querySelectorAll('#pcFilter input[type="checkbox"]:checked:not(#selectAllPcs)')).map(cb => cb.value);
+                if (selectedPcs.length > 0) {
+                    params.append('pcs', selectedPcs.join(','));
+                }
+                
+                const eventFilter = document.getElementById('eventFilter').value;
+                if (eventFilter) {
+                    params.append('event', eventFilter);
+                }
+                
+                const response = await fetch(`api.php?${params.toString()}`);
                 if (!response.ok) throw new Error('Error en la respuesta del servidor');
                 
                 const result = await response.json();
@@ -743,18 +764,20 @@
                 }
                 
                 allData = result.data || [];
+                filteredData = [...allData]; // Los datos ya vienen filtrados del servidor
                 
-                // Calcular ML y M2 para cada registro
-                allData.forEach(item => {
-                    item.ml_total = calculateML(item.ancho, item.largo, item.copias);
-                    item.m2_total = calculateM2(item.ancho, item.largo, item.copias);
-                });
+                // Actualizar lista de PCs si está disponible
+                if (result.pcs_list) {
+                    allPcs = result.pcs_list;
+                    updatePcFilter();
+                }
                 
-                // Obtener lista de PCs únicas
-                allPcs = [...new Set(allData.map(item => item.pc_name).filter(pc => pc))].sort();
-                updatePcFilter();
+                // Actualizar estadísticas con datos del servidor
+                updateStatsFromServer(result.stats || {});
                 
-                applyFilters();
+                selectedRows.clear();
+                currentPage = 1;
+                updateTable();
                 
                 document.getElementById('lastUpdate').textContent = 
                     `Última actualización: ${new Date().toLocaleString()}`;
@@ -795,6 +818,64 @@
                 cb.checked = checkbox.checked;
             });
             applyFilters();
+        }
+
+        function selectRow(id) {
+            if (selectedRows.has(id)) {
+                selectedRows.delete(id);
+            } else {
+                selectedRows.add(id);
+            }
+            updateSelectedStats();
+            updateTable();
+        }
+
+        function toggleSelectAll(checkbox) {
+            const visibleRows = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            
+            visibleRows.forEach(item => {
+                if (checkbox.checked) {
+                    selectedRows.add(item.id);
+                } else {
+                    selectedRows.delete(item.id);
+                }
+            });
+            
+            updateSelectedStats();
+            updateTable();
+        }
+
+        function exportData(format) {
+            const params = new URLSearchParams();
+            params.append('format', format);
+            
+            // Si hay filas seleccionadas, exportar solo esas
+            if (selectedRows.size > 0) {
+                params.append('selected', Array.from(selectedRows).join(','));
+            } else {
+                // Si no hay selección, aplicar filtros actuales
+                params.append('dateFrom', document.getElementById('dateFrom').value);
+                params.append('dateTo', document.getElementById('dateTo').value);
+                
+                const filenameFilter = document.getElementById('filenameFilter').value.trim();
+                if (filenameFilter) {
+                    params.append('filename', filenameFilter);
+                    params.append('filenameLogic', document.querySelector('input[name="filenameLogic"]:checked').value);
+                }
+                
+                const selectedPcs = Array.from(document.querySelectorAll('#pcFilter input[type="checkbox"]:checked:not(#selectAllPcs)')).map(cb => cb.value);
+                if (selectedPcs.length > 0) {
+                    params.append('pcs', selectedPcs.join(','));
+                }
+                
+                const eventFilter = document.getElementById('eventFilter').value;
+                if (eventFilter) {
+                    params.append('event', eventFilter);
+                }
+            }
+            
+            // Abrir en nueva ventana para descarga
+            window.open(`export.php?${params.toString()}`, '_blank');
         }
 
         function applyFilters() {
@@ -866,6 +947,39 @@
             updateSelectedStats();
         }
 
+
         function updateSelectedStats() {
             if (selectedRows.size === 0) {
-                document.querySelectorAll('.stat-number-selected').forEach(el
+                document.querySelectorAll('.stat-number-selected').forEach(el => {
+                    el.style.display = 'none';
+                });
+                return;
+            }
+            
+            const selectedData = filteredData.filter(item => selectedRows.has(item.id));
+            
+            const selectedStats = {
+                total: selectedData.length,
+                rip_count: selectedData.filter(item => item.evento === 'RIP').length,
+                print_count: selectedData.filter(item => item.evento === 'PRINT').length,
+                ml_total: selectedData.reduce((sum, item) => sum + parseFloat(item.ml_total || 0), 0).toFixed(2),
+                m2_total: selectedData.reduce((sum, item) => sum + parseFloat(item.m2_total || 0), 0).toFixed(2),
+                unique_pcs: new Set(selectedData.map(item => item.pc_name).filter(pc => pc)).size
+            };
+
+            document.getElementById('totalJobsSelected').textContent = `Selec: ${selectedStats.total}`;
+            document.getElementById('ripJobsSelected').textContent = `Selec: ${selectedStats.rip_count}`;
+            document.getElementById('printJobsSelected').textContent = `Selec: ${selectedStats.print_count}`;
+            document.getElementById('mlTotalSelected').textContent = `Selec: ${selectedStats.ml_total}`;
+            document.getElementById('m2TotalSelected').textContent = `Selec: ${selectedStats.m2_total}`;
+            document.getElementById('uniquePcsSelected').textContent = `Selec: ${selectedStats.unique_pcs}`;
+            
+            document.querySelectorAll('.stat-number-selected').forEach(el => {
+                el.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>        
+
+       
