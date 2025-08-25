@@ -1,6 +1,5 @@
-
 <?php
-// este es el archivo api.php
+// este es el archivo api.php CORREGIDO
 include "config.php";
 header('Content-Type: application/json');
 
@@ -18,11 +17,15 @@ $whereConditions = [];
 $params = [];
 $paramCount = 1;
 
-// Filtro de fechas
+// CORRECCIÓN: Filtro de fechas mejorado
 if ($dateFrom && $dateTo) {
-    $whereConditions[] = "DATE(fecha) BETWEEN $" . $paramCount . " AND $" . ($paramCount + 1);
-    $params[] = $dateFrom;
-    $params[] = $dateTo;
+    // Agregar tiempo completo para incluir todo el rango
+    $dateFromFull = $dateFrom . ' 00:00:00';
+    $dateToFull = $dateTo . ' 23:59:59';
+    
+    $whereConditions[] = "fecha BETWEEN $" . $paramCount . " AND $" . ($paramCount + 1);
+    $params[] = $dateFromFull;
+    $params[] = $dateToFull;
     $paramCount += 2;
 }
 
