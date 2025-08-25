@@ -1,3 +1,4 @@
+//este es el archivo dashboard.js
 fetch("api.php")
   .then(r => r.json())
   .then(data => {

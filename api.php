@@ -1,4 +1,6 @@
+
 <?php
+// este es el archivo api.php
 include "config.php";
 header('Content-Type: application/json');
 
