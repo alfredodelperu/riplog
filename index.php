@@ -1,49 +1,4 @@
-.dimensions {
-            font-family: 'Courier New', monospace;
-            background: #f5f5f5;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8em;
-        }
-
-        .pc-badge {
-            background: #fff3cd;
-            color: #856404;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 0.8em;
-            display: inline-block;
-        }
-
-        .status-badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.7em;
-            font-weight: bold;
-            margin: 2px;
-            display: inline-block;
-        }
-
-        .sync-yes {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .sync-no {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .seq-yes {
-            background: #cce5ff;
-            color: #004085;
-        }
-
-        .seq-no {
-            background: #f0f0f0;
-            color: #6c6c6c;
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -251,6 +206,14 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             display: block;
+        }
+
+        .dimensions {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
         }
 
         .pc-badge {
