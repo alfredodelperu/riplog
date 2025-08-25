@@ -1,16 +1,11 @@
-   
- 
+       
         
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Impresiones Full Color</title>
-    
-    
-    
     <style>
         * {
             margin: 0;
@@ -508,13 +503,8 @@
             background-color: #f0f0f0;
         }
     </style>
-
-
-    </head>
-
-
-
-    <body>
+</head>
+<body>
     <div class="container">
         <div class="header">
             <h1>🖨️ Dashboard Full Color</h1>
@@ -890,18 +880,6 @@
             window.open(`export.php?${params.toString()}`, '_blank');
         }
 
-
-        function updateStatsFromServer(stats) {
-            document.getElementById('totalJobs').textContent = stats.total || 0;
-            document.getElementById('ripJobs').textContent = stats.rip_count || 0;
-            document.getElementById('printJobs').textContent = stats.print_count || 0;
-            document.getElementById('mlTotal').textContent = stats.ml_total || 0;
-            document.getElementById('m2Total').textContent = stats.m2_total || 0;
-            document.getElementById('uniquePcs').textContent = stats.unique_pcs || 0;
-            
-            updateSelectedStats();
-        }
-
         function applyFilters() {
             let data = [...allData];
             
@@ -971,7 +949,6 @@
             updateSelectedStats();
         }
 
-
         function updateSelectedStats() {
             if (selectedRows.size === 0) {
                 document.querySelectorAll('.stat-number-selected').forEach(el => {
@@ -1002,8 +979,23 @@
                 el.style.display = 'block';
             });
         }
-    </script> 
-    </body>  
-</html> 
 
-        
+        function updateStatsFromServer(stats) {
+            document.getElementById('totalJobs').textContent = stats.total || 0;
+            document.getElementById('ripJobs').textContent = stats.rip_count || 0;
+            document.getElementById('printJobs').textContent = stats.print_count || 0;
+            document.getElementById('mlTotal').textContent = stats.ml_total || 0;
+            document.getElementById('m2Total').textContent = stats.m2_total || 0;
+            document.getElementById('uniquePcs').textContent = stats.unique_pcs || 0;
+            
+            updateSelectedStats();
+        }
+
+        function applyFilters() {
+            // Los filtros ahora se aplican en el servidor
+            loadData();
+        }
+    </script>
+</body>
+</html>
+
