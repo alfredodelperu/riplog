@@ -1002,6 +1002,106 @@
                 el.style.display = 'block';
             });
         }
+
+        // Función para actualizar la tabla - ESTA ES LA QUE FALTABA
+        function updateTable() {
+            const showSizeColumn = document.getElementById('showSizeColumn').checked;
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+            
+            if (pageData.length === 0) {
+                document.getElementById('tableContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h3>📭 No hay datos para mostrar</h3>
+                        <p>Intenta ajustar los filtros o cambiar el rango de fechas</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sizeColumnHeader = showSizeColumn ? '<th>Tamaño</th>' : '';
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" onchange="toggleSelectAll(this)" ${selectedRows.size > 0 && selectedRows.size === pageData.length ? 'checked' : ''}></th>
+                            <th class="filename-col">Archivo</th>
+                            <th class="event-col">Evento</th>
+                            <th class="dimensions-col">Dimensiones</th>
+                            <th class="copies-col">Copias</th>
+                            <th class="ml-col">ML Total</th>
+                            ${sizeColumnHeader}
+                            <th class="pc-col">PC</th>
+                            <th class="date-col">Fecha/Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            pageData.forEach(item => {
+                const isSelected = selectedRows.has(item.id);
+                const statusClass = item.evento === 'RIP' ? 'status-rip' : 'status-print';
+                const dimensions = item.ancho && item.largo ? `${item.ancho} × ${item.largo} cm` : '-';
+                const mlTotal = item.ml_total ? parseFloat(item.ml_total).toFixed(2) : '0.00';
+                const m2Total = item.m2_total ? parseFloat(item.m2_total).toFixed(2) : '0.00';
+                const sizeColumn = showSizeColumn ? `<td><span class="ml-total">${m2Total} m²</span></td>` : '';
+                
+                tableHTML += `
+                    <tr class="${isSelected ? 'selected' : ''}" onclick="selectRow('${item.id}')">
+                        <td><input type="checkbox" class="row-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()"></td>
+                        <td class="filename-col">
+                            <div class="file-name" title="${item.archivo || ''}">${item.archivo || '-'}</div>
+                        </td>
+                        <td><span class="${statusClass}">${item.evento}</span></td>
+                        <td><span class="dimensions">${dimensions}</span></td>
+                        <td>${item.copias || '-'}</td>
+                        <td><span class="ml-total">${mlTotal} m</span></td>
+                        ${sizeColumn}
+                        <td><span class="pc-badge">${item.pc_name || '-'}</span></td>
+                        <td>${item.fecha ? new Date(item.fecha).toLocaleString() : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            // Agregar paginación
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (totalPages > 1) {
+                tableHTML += `
+                    <div class="pagination">
+                        <button class="page-btn" onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>« Primera</button>
+                        <button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Anterior</button>
+                        
+                        <span style="margin: 0 15px;">Página ${currentPage} de ${totalPages}</span>
+                        
+                        <button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente ›</button>
+                        <button class="page-btn" onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>Última »</button>
+                    </div>
+                `;
+            }
+
+            document.getElementById('tableContent').innerHTML = tableHTML;
+        }
+
+        // Función para cambiar de página
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                updateTable();
+            }
+        }
+
+
+
+
+
     </script> 
     </body>  
 </html> 
