@@ -136,7 +136,7 @@ async function loadData() {
     const refreshBtn = document.querySelector('.refresh-btn');
 
     try {
-        spinner.style.display = 'inline-block';
+        
         refreshBtn.classList.add('loading');
 
         const params = new URLSearchParams();
@@ -237,6 +237,8 @@ function onPcChange(checkbox) {
 
 function updateSelectAllPcsState() {
     const selectAllPcs = document.getElementById('selectAllPcs');
+    if (!selectAllPcs) return; // ✅ Si no existe, salir sin error
+
     const pcCheckboxes = document.querySelectorAll('#pcFilter input[type="checkbox"]:not(#selectAllPcs)');
     const checkedPcs = document.querySelectorAll('#pcFilter input[type="checkbox"]:not(#selectAllPcs):checked');
 

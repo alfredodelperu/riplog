@@ -160,11 +160,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     try {
         initializeDates();
-        loadDashboardState();
+        
+        // Primero: cargar datos para poblar los PCs
         loadData();
+
+        // Luego: cargar estado desde localStorage (ya hay PCs cargados)
+        loadDashboardState();
+
+        // Finalmente: configurar eventos
         setupAutoRefresh();
         setupFilterListeners();
         updateSortIndicators();
+        document.addEventListener('click', handleColumnClick);
+
         console.log('🎉 Dashboard inicializado correctamente');
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
