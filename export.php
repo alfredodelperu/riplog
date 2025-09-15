@@ -1,7 +1,9 @@
 <?php
-// export.php - Versión final para descargar todos los registros filtrados
+// export.php - Versión final con soporte PDF real (TCPDF)
 include "config.php";
-header('Content-Type: application/json');
+
+// Incluir TCPDF
+require_once 'tcpdf/tcpdf.php';
 
 // Obtener parámetros
 $dateFrom = $_GET['dateFrom'] ?? '';
@@ -13,7 +15,7 @@ $event = $_GET['event'] ?? '';
 $format = $_GET['format'] ?? 'excel';
 $selected = $_GET['selected'] ?? '';
 
-// Construir condiciones WHERE (igual que en api.php)
+// Construir condiciones WHERE
 $whereConditions = [];
 $params = [];
 $paramCount = 1;
@@ -82,7 +84,7 @@ if ($selected) {
 
 $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
-// Consulta para exportar (SIN LIMIT, para traer TODO)
+// Consulta para exportar (SIN LIMIT)
 $query = "
     SELECT 
         id, 
@@ -146,7 +148,7 @@ while ($row = pg_fetch_assoc($result)) {
     ];
 }
 
-// Exportar según formato
+// Generar archivo según formato
 switch ($format) {
     case 'csv':
         header('Content-Type: text/csv; charset=utf-8');
@@ -179,7 +181,6 @@ switch ($format) {
     case 'excel':
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="riplog_export.xlsx"');
-        // Generar tabla HTML que Excel puede abrir directamente
         echo "<table border='1'>
             <thead>
                 <tr>
@@ -209,9 +210,59 @@ switch ($format) {
         exit;
 
     case 'pdf':
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="riplog_export.pdf"');
-        echo "Exportación PDF no implementada aún. Usa CSV o Excel.";
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetTitle('Exportación RipLog');
+        $pdf->SetAuthor('Dashboard RipLog');
+        $pdf->SetHeaderData('', 0, 'Exportación de Registros RipLog', '');
+        $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+        $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+        $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+        $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+        $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+        $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+        $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+        $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->AddPage();
+
+        $html = '
+            <table border="1" cellpadding="4" style="font-size: 8pt; width: 100%;">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="width: 5%;">ID</th>
+                        <th style="width: 15%;">Evento</th>
+                        <th style="width: 25%;">Archivo</th>
+                        <th style="width: 10%;">Ancho</th>
+                        <th style="width: 10%;">Largo</th>
+                        <th style="width: 8%;">Copias</th>
+                        <th style="width: 10%;">Fecha</th>
+                        <th style="width: 10%;">PC</th>
+                        <th style="width: 7%;">ML Total</th>
+                        <th style="width: 7%;">M² Total</th>
+                    </tr>
+                </thead>
+                <tbody>';
+
+        foreach ($rows as $row) {
+            $html .= '<tr>
+                <td>' . $row['id'] . '</td>
+                <td>' . htmlspecialchars($row['evento']) . '</td>
+                <td>' . htmlspecialchars($row['archivo']) . '</td>
+                <td>' . ($row['ancho'] ?: '-') . '</td>
+                <td>' . ($row['largo'] ?: '-') . '</td>
+                <td>' . $row['copias'] . '</td>
+                <td>' . $row['fecha'] . ' ' . $row['hora'] . '</td>
+                <td>' . htmlspecialchars($row['pc_name']) . '</td>
+                <td>' . $row['ml_total'] . '</td>
+                <td>' . $row['m2_total'] . '</td>
+            </tr>';
+        }
+
+        $html .= '</tbody></table>';
+
+        $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->Output('riplog_export.pdf', 'D');
         exit;
 
     default:

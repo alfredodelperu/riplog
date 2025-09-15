@@ -112,18 +112,20 @@
                     <span>Mostrar Tamaño (m²)</span>
                 </div>
                 <div class="export-buttons">
-                    <button class="export-btn" onclick="exportData('excel')">📊 Exportar página actual (Excel)</button>
-                    <button class="export-btn" onclick="exportData('csv')">📄 Exportar página actual (CSV)</button>
-                    <button class="export-btn" onclick="exportData('pdf')">📋 Exportar página actual (PDF)</button>
+                    <!-- Exportar página actual -->
+                    <button class="export-icon" onclick="exportData('excel')" title="Exportar página actual como Excel">📊</button>
+                    <button class="export-icon" onclick="exportData('csv')" title="Exportar página actual como CSV">📄</button>
+                    <button class="export-icon" onclick="exportData('pdf')" title="Exportar página actual como PDF">📋</button>
 
                     <hr style="margin: 15px 0; border-color: #ddd;">
 
-                    <button class="export-btn" style="background: #28a745; color: white;" onclick="exportData('excel', true)">🚀 Exportar TODO (Excel)</button>
-                    <button class="export-btn" style="background: #28a745; color: white;" onclick="exportData('csv', true)">🚀 Exportar TODO (CSV)</button>
-                    <button class="export-btn" style="background: #28a745; color: white;" onclick="exportData('pdf', true)">🚀 Exportar TODO (PDF)</button>
+                    <!-- Exportar TODO el resultado filtrado -->
+                    <button class="export-icon" onclick="exportData('excel', true)" title="Exportar todos los registros filtrados (Excel)">🚀</button>
+                    <button class="export-icon" onclick="exportData('csv', true)" title="Exportar todos los registros filtrados (CSV)">🚀</button>
+                    <button class="export-icon" onclick="exportData('pdf', true)" title="Exportar todos los registros filtrados (PDF)">🚀</button>
 
                     <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
-                        📌 *“Exportar TODO” usa todos los registros filtrados (hasta 1000), no solo la página actual.
+                        📌 Haz clic en 🚀 para exportar todos los registros filtrados (hasta 1000).
                     </p>
                 </div>
                 <div class="auto-refresh">
@@ -133,10 +135,7 @@
                     </label>
                     <span>Auto-refresh (30s)</span>
                 </div>
-                <button class="refresh-btn" onclick="loadData()">
-                    <span class="spinner" id="spinner" style="display: none;"></span>
-                    🔄 Actualizar
-                </button>
+                <!-- ❌ BOTÓN "ACTUALIZAR" ELIMINADO -->
             </div>
         </div>
         
@@ -157,7 +156,6 @@
 let debugMode = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    
     console.log('🚀 Dashboard inicializando...');
     
     try {
@@ -167,7 +165,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setupAutoRefresh();
         setupFilterListeners();
         updateSortIndicators();
-        document.addEventListener('click', handleColumnClick); // 👈 ¡ESTA LÍNEA FALTABA!
         console.log('🎉 Dashboard inicializado correctamente');
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
@@ -199,114 +196,23 @@ function setupAutoRefresh() {
 }
 
 function setupFilterListeners() {
-    document.getElementById('dateFrom').addEventListener('change', function() {
-        console.log('📅 Fecha FROM cambiada:', this.value);
-        loadData();
-        saveDashboardState();
-    });
-    
-    document.getElementById('dateTo').addEventListener('change', function() {
-        console.log('📅 Fecha TO cambiada:', this.value);
-        loadData();
-        saveDashboardState();
-    });
-    
+    document.getElementById('dateFrom').addEventListener('change', () => { loadData(); saveDashboardState(); });
+    document.getElementById('dateTo').addEventListener('change', () => { loadData(); saveDashboardState(); });
+
     let filenameTimeout;
-    document.getElementById('filenameFilter').addEventListener('input', function() {
-        console.log('🔍 Filtro filename cambiado:', this.value);
+    document.getElementById('filenameFilter').addEventListener('input', () => {
         clearTimeout(filenameTimeout);
-        filenameTimeout = setTimeout(() => {
-            loadData();
-            saveDashboardState();
-        }, 500);
+        filenameTimeout = setTimeout(() => { loadData(); saveDashboardState(); }, 500);
     });
-    
+
     document.querySelectorAll('input[name="filenameLogic"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            console.log('🔗 Lógica filename cambiada:', this.value);
-            loadData();
-            saveDashboardState();
-        });
+        radio.addEventListener('change', () => { loadData(); saveDashboardState(); });
     });
-    
-    document.getElementById('eventFilter').addEventListener('change', function() {
-        console.log('🎯 Filtro evento cambiado:', this.value);
-        loadData();
-        saveDashboardState();
-    });
-    
-    document.getElementById('showSizeColumn').addEventListener('change', function() {
-        console.log('📏 Toggle tamaño cambiado:', this.checked);
-        updateTable();
-        saveDashboardState();
-    });
-    
-    document.getElementById('autoRefresh').addEventListener('change', function() {
-        console.log('⏰ Auto-refresh cambiado:', this.checked);
-        setupAutoRefresh();
-        saveDashboardState();
-    });
+
+    document.getElementById('eventFilter').addEventListener('change', () => { loadData(); saveDashboardState(); });
+    document.getElementById('showSizeColumn').addEventListener('change', () => { updateTable(); saveDashboardState(); });
+    document.getElementById('autoRefresh').addEventListener('change', () => { setupAutoRefresh(); saveDashboardState(); });
 }
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function toggleDebug() {
-    debugMode = !debugMode;
-    console.log('🐛 Debug mode:', debugMode ? 'ACTIVADO' : 'DESACTIVADO');
-    
-    if (debugMode) {
-        console.log('📊 Estado actual:', {
-            allData: allData.length,
-            filteredData: filteredData.length,
-            selectedRows: selectedRows.size,
-            currentPage: currentPage,
-            isLoadingData: isLoadingData
-        });
-    }
-}
-
-function showFilterStatus() {
-    if (debugMode) {
-        const status = {
-            dateFrom: document.getElementById('dateFrom').value,
-            dateTo: document.getElementById('dateTo').value,
-            filename: document.getElementById('filenameFilter').value,
-            filenameLogic: document.querySelector('input[name="filenameLogic"]:checked')?.value,
-            event: document.getElementById('eventFilter').value,
-            selectedPcs: Array.from(document.querySelectorAll('#pcFilter input[type="checkbox"]:checked:not(#selectAllPcs)')).length
-        };
-        console.log('🔍 Estado de filtros:', status);
-    }
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.altKey && e.key === 'd') {
-        e.preventDefault();
-        toggleDebug();
-    }
-    if (e.ctrlKey && e.altKey && e.key === 's') {
-        e.preventDefault();
-        showFilterStatus();
-    }
-});
-
-window.addEventListener('beforeunload', function() {
-    if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-        console.log('🧹 Auto-refresh limpiado');
-    }
-    saveDashboardState();
-});
 </script>
 
 </body>  

@@ -4,12 +4,12 @@ let filteredData = [];
 let selectedRows = new Set();
 let allPcs = [];
 let currentPage = 1;
-const itemsPerPage = 100;
+const itemsPerPage = 50; // ✅ Cambiado de 20 a 50
 let isLoadingData = false;
 
 // Estado de ordenamiento - cargado desde localStorage si existe
 let sortOrder = JSON.parse(localStorage.getItem('dashboardSortOrder')) || {
-    column: 'fecha,hora', // ← ¡ORDENAR POR FECHA Y HORA POR DEFECTO!
+    column: 'fecha,hora', // ✅ Orden por fecha/hora por defecto
     direction: 'desc'
 };
 
@@ -53,7 +53,7 @@ function loadDashboardState() {
 }
 
 function initializeDates() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA'); // ✅ Corregido: usa zona local
     document.getElementById('dateFrom').value = today;
     document.getElementById('dateTo').value = today;
     console.log('✅ Fechas inicializadas:', today);
@@ -76,17 +76,15 @@ function setDateRange(range) {
             endDate = new Date(today.getTime() - 24 * 60 * 60 * 1000);
             break;
         case 'thisWeek':
-            const todayCopy = new Date(today);
-            const dayOfWeek = todayCopy.getDay();
+            const dayOfWeek = today.getDay();
             const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-            startDate = new Date(todayCopy.getTime() - (daysFromMonday * 24 * 60 * 60 * 1000));
+            startDate = new Date(today.getTime() - (daysFromMonday * 24 * 60 * 60 * 1000));
             endDate = new Date(today);
             break;
         case 'lastWeek':
-            const todayCopy2 = new Date(today);
-            const dayOfWeek2 = todayCopy2.getDay();
+            const dayOfWeek2 = today.getDay();
             const daysFromMonday2 = dayOfWeek2 === 0 ? 6 : dayOfWeek2 - 1;
-            endDate = new Date(todayCopy2.getTime() - (daysFromMonday2 + 1) * 24 * 60 * 60 * 1000);
+            endDate = new Date(today.getTime() - (daysFromMonday2 + 1) * 24 * 60 * 60 * 1000);
             startDate = new Date(endDate.getTime() - 6 * 24 * 60 * 60 * 1000);
             break;
         case 'thisMonth':
@@ -111,7 +109,7 @@ function setDateRange(range) {
         document.querySelector(`[onclick="setDateRange('${range}')"]`)?.classList.add('active');
     }
 
-    loadData();
+    loadData(); // ✅ Actualiza automáticamente
 }
 
 function calculateML(ancho, largo, copias) {
@@ -436,23 +434,23 @@ function updateTable() {
                         <th class="filename-col" style="cursor: pointer;" data-column="archivo">
                             Archivo <span class="sort-indicator"></span>
                         </th>
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="evento">
+                        <th class="event-col" style="cursor: pointer;" data-column="evento">
                             Evento <span class="sort-indicator"></span>
                         </th>
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="ancho,largo">
+                        <th class="dimensions-col" style="cursor: pointer;" data-column="ancho,largo">
                             Dimensiones <span class="sort-indicator"></span>
                         </th>
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="copias">
+                        <th class="copies-col" style="cursor: pointer;" data-column="copias">
                             Copias <span class="sort-indicator"></span>
                         </th>
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="ml_total">
+                        <th class="ml-col" style="cursor: pointer;" data-column="ml_total">
                             ML Total <span class="sort-indicator"></span>
                         </th>
                         ${sizeColumnHeader}
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="pc_name">
+                        <th class="pc-col" style="cursor: pointer;" data-column="pc_name">
                             PC <span class="sort-indicator"></span>
                         </th>
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="fecha,hora">
+                        <th class="date-col" style="cursor: pointer;" data-column="fecha,hora">
                             Fecha/Hora <span class="sort-indicator"></span>
                         </th>
                     </tr>
@@ -466,7 +464,7 @@ function updateTable() {
         const dimensions = item.ancho && item.largo ? `${item.ancho} × ${item.largo} cm` : '-';
         const mlTotal = item.ml_total ? parseFloat(item.ml_total).toFixed(2) : '0.00';
         const m2Total = item.m2_total ? parseFloat(item.m2_total).toFixed(2) : '0.00';
-        const sizeColumn = showSizeColumn ? `<td style="padding: 12px;">${m2Total}</td>` : '';
+        const sizeColumn = showSizeColumn ? `<td class="m2-col" style="padding: 12px;">${m2Total}</td>` : '';
 
         tableHTML += `
             <tr 
@@ -592,7 +590,7 @@ document.addEventListener('click', function(e) {
     if (e.target.type === 'checkbox' ||
         e.target.tagName === 'BUTTON' ||
         e.target.tagName === 'A' ||
-        e.target.closest('.export-btn') ||
+        e.target.closest('.export-icon') ||
         e.target.closest('.date-shortcut') ||
         e.target.closest('label')) {
         return;
@@ -663,6 +661,7 @@ function setupFilterListeners() {
 // Inicializar al cargar
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Dashboard inicializando...');
+    
     try {
         initializeDates();
         loadDashboardState();
@@ -670,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupAutoRefresh();
         setupFilterListeners();
         updateSortIndicators();
-        document.addEventListener('click', handleColumnClick); // ¡IMPORTANTE: REGISTRAR EL EVENTO!
+        document.addEventListener('click', handleColumnClick); // ✅ REGISTRADO AHORA
         console.log('🎉 Dashboard inicializado correctamente');
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
