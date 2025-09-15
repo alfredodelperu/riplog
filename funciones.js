@@ -619,7 +619,7 @@ document.addEventListener('click', function(e) {
 // Configuración de auto-refresh
 function setupAutoRefresh() {
     const autoRefreshCheckbox = document.getElementById('autoRefresh');
-
+    
     function updateAutoRefresh() {
         if (autoRefreshInterval) {
             clearInterval(autoRefreshInterval);
@@ -636,7 +636,7 @@ function setupAutoRefresh() {
             console.log('⏸️ Auto-refresh desactivado');
         }
     }
-
+    
     updateAutoRefresh();
     autoRefreshCheckbox.addEventListener('change', updateAutoRefresh);
 }
@@ -671,6 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupAutoRefresh();
         setupFilterListeners();
         updateSortIndicators();
+        document.addEventListener('click', handleColumnClick); // ¡IMPORTANTE: REGISTRAR EL EVENTO!
         console.log('🎉 Dashboard inicializado correctamente');
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
