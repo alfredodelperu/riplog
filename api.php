@@ -1,5 +1,5 @@
 <?php
-// este es el archivo api.php CORREGIDO
+// api.php - Versión final con ordenamiento, seguridad y soporte para exportación total
 include "config.php";
 header('Content-Type: application/json');
 
@@ -10,30 +10,49 @@ $filename = $_GET['filename'] ?? '';
 $filenameLogic = $_GET['filenameLogic'] ?? 'or';
 $pcs = $_GET['pcs'] ?? '';
 $event = $_GET['event'] ?? '';
-$limit = $_GET['limit'] ?? 1000; // Aumentar límite por defecto
+$limit = $_GET['limit'] ?? 1000;
+
+// Validar parámetros de orden
+$allowedColumns = [
+    'id', 'evento', 'archivo', 'tamano', 'ancho', 'largo', 'copias',
+    'fecha', 'hora', 'pc_name', 'ml_total', 'm2_total'
+];
+$order_by = $_GET['order_by'] ?? 'id';
+$order_dir = strtoupper($_GET['order_dir'] ?? 'DESC');
+
+if (!in_array($order_by, $allowedColumns)) {
+    $order_by = 'id';
+}
+if ($order_dir !== 'ASC') {
+    $order_dir = 'DESC';
+}
+
+// Mapeo para columnas compuestas
+$columnMap = [
+    'ancho,largo' => 'ancho, largo',
+    'fecha,hora' => 'fecha, hora'
+];
+if (isset($columnMap[$order_by])) {
+    $order_by = $columnMap[$order_by];
+}
 
 // Construir condiciones WHERE
 $whereConditions = [];
 $params = [];
 $paramCount = 1;
 
-// CORRECCIÓN: Filtro de fechas mejorado
 if ($dateFrom && $dateTo) {
-    // Agregar tiempo completo para incluir todo el rango
     $dateFromFull = $dateFrom . ' 00:00:00';
     $dateToFull = $dateTo . ' 23:59:59';
-    
     $whereConditions[] = "fecha BETWEEN $" . $paramCount . " AND $" . ($paramCount + 1);
     $params[] = $dateFromFull;
     $params[] = $dateToFull;
     $paramCount += 2;
 }
 
-// Filtro de nombre de archivo
 if ($filename) {
     $terms = array_map('trim', explode(',', $filename));
     $filenameConditions = [];
-    
     foreach ($terms as $term) {
         if (!empty($term)) {
             $filenameConditions[] = "LOWER(archivo) LIKE $" . $paramCount;
@@ -41,18 +60,15 @@ if ($filename) {
             $paramCount++;
         }
     }
-    
     if (!empty($filenameConditions)) {
         $connector = ($filenameLogic === 'and') ? ' AND ' : ' OR ';
         $whereConditions[] = '(' . implode($connector, $filenameConditions) . ')';
     }
 }
 
-// Filtro de PCs
 if ($pcs) {
     $pcList = array_map('trim', explode(',', $pcs));
     $pcPlaceholders = [];
-    
     foreach ($pcList as $pc) {
         if (!empty($pc)) {
             $pcPlaceholders[] = '$' . $paramCount;
@@ -60,20 +76,17 @@ if ($pcs) {
             $paramCount++;
         }
     }
-    
     if (!empty($pcPlaceholders)) {
         $whereConditions[] = 'pc_name IN (' . implode(',', $pcPlaceholders) . ')';
     }
 }
 
-// Filtro de evento
 if ($event) {
     $whereConditions[] = "evento = $" . $paramCount;
     $params[] = $event;
     $paramCount++;
 }
 
-// Construir consulta
 $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
 $query = "
@@ -92,7 +105,7 @@ $query = "
         secuenciado
     FROM riplog 
     $whereClause
-    ORDER BY id DESC 
+    ORDER BY $order_by $order_dir
     LIMIT $limit
 ";
 
@@ -110,33 +123,23 @@ if (!$result) {
 
 $rows = [];
 while ($row = pg_fetch_assoc($result)) {
-    // Calcular ML Total según las reglas especificadas
     $ml_total = 0;
-    if ($row['ancho'] && $row['largo'] && $row['copias']) {
-        $ancho = (float)$row['ancho'];
-        $largo = (float)$row['largo'];
-        $copias = (int)$row['copias'];
-        
-        if ($ancho >= 60 || $largo >= 60) {
-            $dimension = max($ancho, $largo);
-        } else {
-            $dimension = min($ancho, $largo);
-        }
-        
-        $ml_total = ($dimension * $copias) / 100; // Convertir cm a metros
-    }
-    
-    // Calcular M² Total
     $m2_total = 0;
     if ($row['ancho'] && $row['largo'] && $row['copias']) {
         $ancho = (float)$row['ancho'];
         $largo = (float)$row['largo'];
         $copias = (int)$row['copias'];
-        
-        $m2_total = ($ancho * $largo * $copias) / 10000; // Convertir cm² a m²
+
+        if ($ancho >= 60 || $largo >= 60) {
+            $dimension = max($ancho, $largo);
+        } else {
+            $dimension = min($ancho, $largo);
+        }
+
+        $ml_total = ($dimension * $copias) / 100;
+        $m2_total = ($ancho * $largo * $copias) / 10000;
     }
-    
-    // Formatear los datos
+
     $rows[] = [
         'id' => (int)$row['id'],
         'evento' => $row['evento'],
@@ -155,7 +158,7 @@ while ($row = pg_fetch_assoc($result)) {
     ];
 }
 
-// Estadísticas con los mismos filtros aplicados
+// Estadísticas
 $statsQuery = "
     SELECT 
         COUNT(*) as total,
@@ -165,7 +168,6 @@ $statsQuery = "
         COUNT(DISTINCT pc_name) as unique_pcs,
         COUNT(CASE WHEN sincronizado = 1 THEN 1 END) as synchronized_count,
         COUNT(CASE WHEN secuenciado = 1 THEN 1 END) as sequenced_count,
-        -- Cálculo de ML Total
         SUM(CASE 
             WHEN ancho IS NOT NULL AND largo IS NOT NULL AND copias IS NOT NULL THEN
                 CASE 
@@ -176,7 +178,6 @@ $statsQuery = "
                 END
             ELSE 0
         END) as ml_total,
-        -- Cálculo de M² Total
         SUM(CASE 
             WHEN ancho IS NOT NULL AND largo IS NOT NULL AND copias IS NOT NULL THEN
                 (ancho * largo * copias) / 10000
@@ -187,9 +188,7 @@ $statsQuery = "
 ";
 
 $stats_result = pg_query_params($conn, $statsQuery, $params);
-
 if (!$stats_result) {
-    // Si hay error en stats, continuar con datos básicos
     $stats = [
         'total' => count($rows),
         'rip_count' => count(array_filter($rows, fn($r) => $r['evento'] === 'RIP')),
@@ -205,7 +204,7 @@ if (!$stats_result) {
     $stats = pg_fetch_assoc($stats_result);
 }
 
-// Obtener lista de todas las PCs para los filtros
+// Obtener lista de PCs
 $pcQuery = "SELECT DISTINCT pc_name FROM riplog WHERE pc_name IS NOT NULL ORDER BY pc_name";
 $pcResult = pg_query($conn, $pcQuery);
 $pcs_list = [];

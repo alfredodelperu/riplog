@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Impresiones Full Color</title>
-    <!-- CSS externo -->
     <link rel="stylesheet" href="estilos.css">
 </head>
 
@@ -113,9 +112,19 @@
                     <span>Mostrar Tamaño (m²)</span>
                 </div>
                 <div class="export-buttons">
-                    <button class="export-btn" onclick="exportData('excel')">📊 Excel</button>
-                    <button class="export-btn" onclick="exportData('csv')">📄 CSV</button>
-                    <button class="export-btn" onclick="exportData('pdf')">📋 PDF</button>
+                    <button class="export-btn" onclick="exportData('excel')">📊 Exportar página actual (Excel)</button>
+                    <button class="export-btn" onclick="exportData('csv')">📄 Exportar página actual (CSV)</button>
+                    <button class="export-btn" onclick="exportData('pdf')">📋 Exportar página actual (PDF)</button>
+
+                    <hr style="margin: 15px 0; border-color: #ddd;">
+
+                    <button class="export-btn" style="background: #28a745; color: white;" onclick="exportData('excel', true)">🚀 Exportar TODO (Excel)</button>
+                    <button class="export-btn" style="background: #28a745; color: white;" onclick="exportData('csv', true)">🚀 Exportar TODO (CSV)</button>
+                    <button class="export-btn" style="background: #28a745; color: white;" onclick="exportData('pdf', true)">🚀 Exportar TODO (PDF)</button>
+
+                    <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
+                        📌 *“Exportar TODO” usa todos los registros filtrados (hasta 1000), no solo la página actual.
+                    </p>
                 </div>
                 <div class="auto-refresh">
                     <label class="switch">
@@ -142,121 +151,101 @@
     </div>
 </div>
 
-<!-- JavaScript externo -->
 <script src="funciones.js"></script>
 
 <script>
-// Variables globales para debug
 let debugMode = false;
 
-// INICIALIZACIÓN MEJORADA CON DEBUGGING
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Dashboard inicializando...');
     
     try {
-        // 1. Inicializar fechas por defecto
         initializeDates();
-        console.log('✅ Fechas inicializadas');
-        
-        // 2. Cargar datos inmediatamente
+        loadDashboardState();
         loadData();
-        console.log('✅ Carga inicial de datos solicitada');
-        
-        // 3. Configurar auto-refresh mejorado
         setupAutoRefresh();
-        console.log('✅ Auto-refresh configurado');
-        
-        // 4. CORREGIDO: Event listeners para filtros con debounce
         setupFilterListeners();
-        console.log('✅ Event listeners configurados');
-        
+        updateSortIndicators();
         console.log('🎉 Dashboard inicializado correctamente');
-        
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
     }
 });
 
-// NUEVA: Configuración mejorada de auto-refresh
 function setupAutoRefresh() {
     const autoRefreshCheckbox = document.getElementById('autoRefresh');
     
     function updateAutoRefresh() {
-        // Limpiar interval anterior si existe
         if (autoRefreshInterval) {
             clearInterval(autoRefreshInterval);
             autoRefreshInterval = null;
         }
-        
-        // Configurar nuevo interval si está habilitado
         if (autoRefreshCheckbox.checked) {
             autoRefreshInterval = setInterval(() => {
-                console.log('⏰ Auto-refresh ejecutando...');
-                if (!isLoadingData) { // Solo si no hay carga en progreso
+                if (!isLoadingData) {
                     loadData();
                 }
-            }, 30000); // 30 segundos
+            }, 30000);
             console.log('🔄 Auto-refresh activado');
         } else {
             console.log('⏸️ Auto-refresh desactivado');
         }
     }
     
-    // Configurar auto-refresh inicial
     updateAutoRefresh();
-    
-    // Escuchar cambios en el checkbox
     autoRefreshCheckbox.addEventListener('change', updateAutoRefresh);
 }
 
-// NUEVA: Configuración de event listeners para filtros
 function setupFilterListeners() {
-    // Filtros de fecha - cargan inmediatamente
     document.getElementById('dateFrom').addEventListener('change', function() {
         console.log('📅 Fecha FROM cambiada:', this.value);
         loadData();
+        saveDashboardState();
     });
     
     document.getElementById('dateTo').addEventListener('change', function() {
         console.log('📅 Fecha TO cambiada:', this.value);
         loadData();
+        saveDashboardState();
     });
     
-    // CORREGIDO: Filtro de nombre de archivo con debounce mejorado
     let filenameTimeout;
     document.getElementById('filenameFilter').addEventListener('input', function() {
         console.log('🔍 Filtro filename cambiado:', this.value);
-        
         clearTimeout(filenameTimeout);
         filenameTimeout = setTimeout(() => {
             loadData();
-        }, 500); // 500ms de delay para typing
+            saveDashboardState();
+        }, 500);
     });
     
-    // CORREGIDO: Radio buttons de lógica de filename
     document.querySelectorAll('input[name="filenameLogic"]').forEach(radio => {
         radio.addEventListener('change', function() {
             console.log('🔗 Lógica filename cambiada:', this.value);
             loadData();
+            saveDashboardState();
         });
     });
     
-    // Filtro de eventos
     document.getElementById('eventFilter').addEventListener('change', function() {
         console.log('🎯 Filtro evento cambiado:', this.value);
         loadData();
+        saveDashboardState();
     });
     
-    // Toggle de mostrar tamaño
     document.getElementById('showSizeColumn').addEventListener('change', function() {
         console.log('📏 Toggle tamaño cambiado:', this.checked);
-        updateTable(); // Solo actualiza la tabla, no recarga datos
+        updateTable();
+        saveDashboardState();
     });
     
-    console.log('🎧 Event listeners configurados');
+    document.getElementById('autoRefresh').addEventListener('change', function() {
+        console.log('⏰ Auto-refresh cambiado:', this.checked);
+        setupAutoRefresh();
+        saveDashboardState();
+    });
 }
 
-// Función helper para debounce mejorado
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -269,7 +258,6 @@ function debounce(func, wait) {
     };
 }
 
-// NUEVA: Función para toggle de debug
 function toggleDebug() {
     debugMode = !debugMode;
     console.log('🐛 Debug mode:', debugMode ? 'ACTIVADO' : 'DESACTIVADO');
@@ -285,7 +273,6 @@ function toggleDebug() {
     }
 }
 
-// NUEVA: Función para mostrar estado de filtros
 function showFilterStatus() {
     if (debugMode) {
         const status = {
@@ -300,27 +287,23 @@ function showFilterStatus() {
     }
 }
 
-// Limpiar interval al cerrar la página
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.altKey && e.key === 'd') {
+        e.preventDefault();
+        toggleDebug();
+    }
+    if (e.ctrlKey && e.altKey && e.key === 's') {
+        e.preventDefault();
+        showFilterStatus();
+    }
+});
+
 window.addEventListener('beforeunload', function() {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         console.log('🧹 Auto-refresh limpiado');
     }
-});
-
-// NUEVA: Mostrar atajos de teclado para debug (opcional)
-document.addEventListener('keydown', function(e) {
-    // Ctrl + Alt + D para toggle debug
-    if (e.ctrlKey && e.altKey && e.key === 'd') {
-        e.preventDefault();
-        toggleDebug();
-    }
-    
-    // Ctrl + Alt + S para mostrar estado
-    if (e.ctrlKey && e.altKey && e.key === 's') {
-        e.preventDefault();
-        showFilterStatus();
-    }
+    saveDashboardState();
 });
 </script>
 

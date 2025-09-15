@@ -526,3 +526,42 @@ tr.selected td {
 .multi-select-option:hover {
     background-color: #f0f0f0;
 }
+
+/* =============================================
+   Efecto visual premium para filas seleccionadas
+============================================= */
+
+/* Estilo base para filas seleccionadas */
+tr[selected] {
+    border-left: 4px solid #1e88e5 !important;
+    background-color: #f0f7ff !important;
+    box-shadow: 2px 0 8px rgba(30, 136, 229, 0.15) !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer;
+}
+
+/* Añadir efecto hover incluso cuando está seleccionado */
+tr[selected]:hover {
+    background-color: #e6f0ff !important;
+    box-shadow: 2px 0 12px rgba(30, 136, 229, 0.2) !important;
+}
+
+/* Asegurar que el texto siga legible */
+tr[selected] td {
+    color: #1a1a1a !important;
+    font-weight: 500 !important;
+}
+
+/* Opcional: añadir un pequeño ícono de check en la celda de checkbox si quieres */
+tr[selected] td input[type="checkbox"]::after {
+    content: '✓';
+    position: absolute;
+    font-size: 10px;
+    color: #1e88e5;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+tr[selected] td input[type="checkbox"]:checked::after {
+    opacity: 1;
+}
