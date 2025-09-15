@@ -132,7 +132,7 @@ function calculateM2(ancho, largo, copias) {
 async function loadData() {
     if (isLoadingData) return;
     isLoadingData = true;
-    const spinner = document.getElementById('spinner');
+    
     const refreshBtn = document.querySelector('.refresh-btn');
 
     try {
@@ -206,7 +206,7 @@ async function loadData() {
             </div>
         `;
     } finally {
-        spinner.style.display = 'none';
+        
         refreshBtn.classList.remove('loading');
         isLoadingData = false;
     }
