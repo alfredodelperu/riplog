@@ -132,13 +132,10 @@ function calculateM2(ancho, largo, copias) {
 async function loadData() {
     if (isLoadingData) return;
     isLoadingData = true;
-    
+
     const refreshBtn = document.querySelector('.refresh-btn');
 
     try {
-        
-        refreshBtn.classList.add('loading');
-
         const params = new URLSearchParams();
 
         const dateFromValue = document.getElementById('dateFrom').value;
@@ -164,7 +161,6 @@ async function loadData() {
         const eventFilter = document.getElementById('eventFilter').value;
         if (eventFilter) params.append('event', eventFilter);
 
-        // Añadir orden
         if (sortOrder.column && sortOrder.direction) {
             params.append('order_by', sortOrder.column);
             params.append('order_dir', sortOrder.direction);
@@ -184,7 +180,7 @@ async function loadData() {
 
         if (result.pcs_list && JSON.stringify(result.pcs_list) !== JSON.stringify(allPcs)) {
             allPcs = result.pcs_list;
-            updatePcFilter();
+            updatePcFilter(); // ← ¡Aquí se generan los checkboxes!
         }
 
         updateStatsFromServer(result.stats || {});
@@ -206,8 +202,9 @@ async function loadData() {
             </div>
         `;
     } finally {
-        
-        refreshBtn.classList.remove('loading');
+        if (refreshBtn) {
+            refreshBtn.classList.remove('loading');
+        }
         isLoadingData = false;
     }
 }
@@ -237,7 +234,7 @@ function onPcChange(checkbox) {
 
 function updateSelectAllPcsState() {
     const selectAllPcs = document.getElementById('selectAllPcs');
-    if (!selectAllPcs) return; // ✅ Si no existe, salir sin error
+    if (!selectAllPcs) return;
 
     const pcCheckboxes = document.querySelectorAll('#pcFilter input[type="checkbox"]:not(#selectAllPcs)');
     const checkedPcs = document.querySelectorAll('#pcFilter input[type="checkbox"]:not(#selectAllPcs):checked');
@@ -253,6 +250,7 @@ function updateSelectAllPcsState() {
         selectAllPcs.checked = false;
     }
 }
+
 
 function toggleAllPcs(checkbox) {
     console.log('🔄 Toggle todas las PCs:', checkbox.checked);
