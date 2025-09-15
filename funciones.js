@@ -4,7 +4,7 @@ let filteredData = [];
 let selectedRows = new Set();
 let allPcs = [];
 let currentPage = 1;
-const itemsPerPage = 20;
+const itemsPerPage = 100;
 let isLoadingData = false;
 
 // Estado de ordenamiento - cargado desde localStorage si existe
@@ -433,7 +433,7 @@ function updateTable() {
                             <input type="checkbox" onchange="toggleSelectAll(this)" 
                                    ${selectedRows.size > 0 && selectedRows.size === pageData.length ? 'checked' : ''}>
                         </th>
-                        <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="archivo">
+                        <th class="filename-col" style="cursor: pointer;" data-column="archivo">
                             Archivo <span class="sort-indicator"></span>
                         </th>
                         <th style="padding: 12px; text-align: left; cursor: pointer;" data-column="evento">
@@ -481,8 +481,7 @@ function updateTable() {
                            onclick="handleRowCheckboxClick(this, '${item.id}')" 
                            style="margin: 0; cursor: pointer;">
                 </td>
-                <td style="padding: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
-                    title="${item.archivo || ''}">
+                <td class="filename-col" title="${item.archivo || ''}">
                     ${item.archivo || '-'}
                 </td>
                 <td style="padding: 12px;">
