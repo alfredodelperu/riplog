@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Impresiones Full Color</title>
-    <!-- CSS siempre en head -->
+    <!-- CSS externo -->
     <link rel="stylesheet" href="estilos.css">
 </head>
 
@@ -74,11 +74,11 @@
                 <div class="filename-filter-options">
                     <div class="checkbox-container">
                         <input type="radio" name="filenameLogic" value="or" id="filenameOr" checked>
-                        <label for="filenameOr">OR</label>
+                        <label for="filenameOr">OR (cualquier término)</label>
                     </div>
                     <div class="checkbox-container">
                         <input type="radio" name="filenameLogic" value="and" id="filenameAnd">
-                        <label for="filenameAnd">AND</label>
+                        <label for="filenameAnd">AND (todos los términos)</label>
                     </div>
                 </div>
             </div>
@@ -86,7 +86,7 @@
             <div class="filter-group">
                 <label class="filter-label">💻 Computadoras</label>
                 <div class="multi-select" id="pcFilter">
-                    <!-- Se llena dinámicamente -->
+                    <div class="loading">Cargando PCs...</div>
                 </div>
             </div>
 
@@ -110,7 +110,7 @@
                         <input type="checkbox" id="showSizeColumn">
                         <span class="slider"></span>
                     </label>
-                    <span>Mostrar Tamaño</span>
+                    <span>Mostrar Tamaño (m²)</span>
                 </div>
                 <div class="export-buttons">
                     <button class="export-btn" onclick="exportData('excel')">📊 Excel</button>
@@ -142,58 +142,121 @@
     </div>
 </div>
 
-<!-- JavaScript -->
+<!-- JavaScript externo -->
 <script src="funciones.js"></script>
 
 <script>
-// INICIALIZACIÓN AUTOMÁTICA AL CARGAR LA PÁGINA
+// Variables globales para debug
+let debugMode = false;
+
+// INICIALIZACIÓN MEJORADA CON DEBUGGING
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dashboard inicializando...');
+    console.log('🚀 Dashboard inicializando...');
     
-    // 1. Inicializar fechas por defecto
-    initializeDates();
-    
-    // 2. Cargar datos inmediatamente
-    loadData();
-    
-    // 3. Configurar auto-refresh
+    try {
+        // 1. Inicializar fechas por defecto
+        initializeDates();
+        console.log('✅ Fechas inicializadas');
+        
+        // 2. Cargar datos inmediatamente
+        loadData();
+        console.log('✅ Carga inicial de datos solicitada');
+        
+        // 3. Configurar auto-refresh mejorado
+        setupAutoRefresh();
+        console.log('✅ Auto-refresh configurado');
+        
+        // 4. CORREGIDO: Event listeners para filtros con debounce
+        setupFilterListeners();
+        console.log('✅ Event listeners configurados');
+        
+        console.log('🎉 Dashboard inicializado correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error en inicialización:', error);
+    }
+});
+
+// NUEVA: Configuración mejorada de auto-refresh
+function setupAutoRefresh() {
     const autoRefreshCheckbox = document.getElementById('autoRefresh');
     
-    function setupAutoRefresh() {
+    function updateAutoRefresh() {
         // Limpiar interval anterior si existe
         if (autoRefreshInterval) {
             clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
         }
         
         // Configurar nuevo interval si está habilitado
         if (autoRefreshCheckbox.checked) {
             autoRefreshInterval = setInterval(() => {
-                console.log('Auto-refresh ejecutando...');
-                loadData();
+                console.log('⏰ Auto-refresh ejecutando...');
+                if (!isLoadingData) { // Solo si no hay carga en progreso
+                    loadData();
+                }
             }, 30000); // 30 segundos
+            console.log('🔄 Auto-refresh activado');
+        } else {
+            console.log('⏸️ Auto-refresh desactivado');
         }
     }
     
     // Configurar auto-refresh inicial
-    setupAutoRefresh();
+    updateAutoRefresh();
     
-    // Escuchar cambios en el checkbox de auto-refresh
-    autoRefreshCheckbox.addEventListener('change', setupAutoRefresh);
-    
-    // 4. Configurar event listeners para filtros
-    document.getElementById('dateFrom').addEventListener('change', loadData);
-    document.getElementById('dateTo').addEventListener('change', loadData);
-    document.getElementById('filenameFilter').addEventListener('input', debounce(loadData, 500));
-    document.getElementById('eventFilter').addEventListener('change', loadData);
-    document.querySelectorAll('input[name="filenameLogic"]').forEach(radio => {
-        radio.addEventListener('change', loadData);
-    });
-    document.getElementById('showSizeColumn').addEventListener('change', updateTable);
-    
-    console.log('Dashboard inicializado correctamente');
-});
+    // Escuchar cambios en el checkbox
+    autoRefreshCheckbox.addEventListener('change', updateAutoRefresh);
+}
 
-// Función helper para debounce
+// NUEVA: Configuración de event listeners para filtros
+function setupFilterListeners() {
+    // Filtros de fecha - cargan inmediatamente
+    document.getElementById('dateFrom').addEventListener('change', function() {
+        console.log('📅 Fecha FROM cambiada:', this.value);
+        loadData();
+    });
+    
+    document.getElementById('dateTo').addEventListener('change', function() {
+        console.log('📅 Fecha TO cambiada:', this.value);
+        loadData();
+    });
+    
+    // CORREGIDO: Filtro de nombre de archivo con debounce mejorado
+    let filenameTimeout;
+    document.getElementById('filenameFilter').addEventListener('input', function() {
+        console.log('🔍 Filtro filename cambiado:', this.value);
+        
+        clearTimeout(filenameTimeout);
+        filenameTimeout = setTimeout(() => {
+            loadData();
+        }, 500); // 500ms de delay para typing
+    });
+    
+    // CORREGIDO: Radio buttons de lógica de filename
+    document.querySelectorAll('input[name="filenameLogic"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            console.log('🔗 Lógica filename cambiada:', this.value);
+            loadData();
+        });
+    });
+    
+    // Filtro de eventos
+    document.getElementById('eventFilter').addEventListener('change', function() {
+        console.log('🎯 Filtro evento cambiado:', this.value);
+        loadData();
+    });
+    
+    // Toggle de mostrar tamaño
+    document.getElementById('showSizeColumn').addEventListener('change', function() {
+        console.log('📏 Toggle tamaño cambiado:', this.checked);
+        updateTable(); // Solo actualiza la tabla, no recarga datos
+    });
+    
+    console.log('🎧 Event listeners configurados');
+}
+
+// Función helper para debounce mejorado
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -206,10 +269,57 @@ function debounce(func, wait) {
     };
 }
 
+// NUEVA: Función para toggle de debug
+function toggleDebug() {
+    debugMode = !debugMode;
+    console.log('🐛 Debug mode:', debugMode ? 'ACTIVADO' : 'DESACTIVADO');
+    
+    if (debugMode) {
+        console.log('📊 Estado actual:', {
+            allData: allData.length,
+            filteredData: filteredData.length,
+            selectedRows: selectedRows.size,
+            currentPage: currentPage,
+            isLoadingData: isLoadingData
+        });
+    }
+}
+
+// NUEVA: Función para mostrar estado de filtros
+function showFilterStatus() {
+    if (debugMode) {
+        const status = {
+            dateFrom: document.getElementById('dateFrom').value,
+            dateTo: document.getElementById('dateTo').value,
+            filename: document.getElementById('filenameFilter').value,
+            filenameLogic: document.querySelector('input[name="filenameLogic"]:checked')?.value,
+            event: document.getElementById('eventFilter').value,
+            selectedPcs: Array.from(document.querySelectorAll('#pcFilter input[type="checkbox"]:checked:not(#selectAllPcs)')).length
+        };
+        console.log('🔍 Estado de filtros:', status);
+    }
+}
+
 // Limpiar interval al cerrar la página
 window.addEventListener('beforeunload', function() {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
+        console.log('🧹 Auto-refresh limpiado');
+    }
+});
+
+// NUEVA: Mostrar atajos de teclado para debug (opcional)
+document.addEventListener('keydown', function(e) {
+    // Ctrl + Alt + D para toggle debug
+    if (e.ctrlKey && e.altKey && e.key === 'd') {
+        e.preventDefault();
+        toggleDebug();
+    }
+    
+    // Ctrl + Alt + S para mostrar estado
+    if (e.ctrlKey && e.altKey && e.key === 's') {
+        e.preventDefault();
+        showFilterStatus();
     }
 });
 </script>
