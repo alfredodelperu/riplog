@@ -157,6 +157,7 @@
 let debugMode = false;
 
 document.addEventListener('DOMContentLoaded', function() {
+    
     console.log('🚀 Dashboard inicializando...');
     
     try {
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupAutoRefresh();
         setupFilterListeners();
         updateSortIndicators();
+        document.addEventListener('click', handleColumnClick); // 👈 ¡ESTA LÍNEA FALTABA!
         console.log('🎉 Dashboard inicializado correctamente');
     } catch (error) {
         console.error('❌ Error en inicialización:', error);

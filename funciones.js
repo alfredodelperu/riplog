@@ -9,7 +9,7 @@ let isLoadingData = false;
 
 // Estado de ordenamiento - cargado desde localStorage si existe
 let sortOrder = JSON.parse(localStorage.getItem('dashboardSortOrder')) || {
-    column: 'id',
+    column: 'fecha,hora', // ← ¡ORDENAR POR FECHA Y HORA POR DEFECTO!
     direction: 'desc'
 };
 
